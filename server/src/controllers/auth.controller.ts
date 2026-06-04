@@ -1,9 +1,10 @@
-import { Request, Response } from "express";
+import { Request, Response, CookieOptions } from "express";
 import User from "../models/user.model";
 import OTP from "../models/OTP";
 import otpGenerator from "otp-generator";
 import bcrypt from "bcrypt";
 import Profile from "../models/profile.model";
+import jwt from "jsonwebtoken";
 
 export const sendOTP = async (req: Request, res: Response) =>  {
     try {
@@ -150,6 +151,72 @@ export const signUp = async (req: Request, res: Response) => {
         return res.status(500).json({
             success: false,
             message: "Failed to register user",
+        });
+    }
+};
+
+export const login = async (req: Request, res: Response) => {
+    try {
+        const {email, password} = req.body;
+
+        if(!email || !password) {
+            return res.status(403). json({
+                success:false,
+                message:'All fields are required, please try again',
+            });
+        }
+
+        const user = await User.findOne({email}).populate("additionalDetails");
+        if(!user) {
+            return res.status(401).json({
+                success:false,
+                message:"User is not registrered, please signup first",
+            });
+        }
+
+        if(await bcrypt.compare(password, user.password)) {
+            const payload = {
+                email: user.email,
+                id: user._id,
+                accountType: user.accountType,
+            }
+            const token = jwt.sign(payload, process.env.JWT_SECRET!, {
+                expiresIn:"2h",
+            });
+
+            const userObj = user.toObject();
+
+            delete (userObj as any).password;
+            (userObj as any).token = token;
+
+            const options: CookieOptions = {
+                expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "strict",
+            };
+            
+            return res.cookie("token", token, options).status(200).json({
+                success:true,
+                token,
+                user: userObj,
+                message:'Logged in successfully',
+            })
+
+        }
+        else {
+            return res.status(401).json({
+                success:false,
+                message:'Password is incorrect',
+            });
+        }
+        
+    }
+    catch(error) {
+        console.log(error);
+        return res.status(500).json({
+            success:false,
+            message:'Login Failure, please try again',
         });
     }
 };
