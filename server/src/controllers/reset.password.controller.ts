@@ -46,3 +46,49 @@ export const resetPasswordToken = async (req: Request, res: Response) => {
    
 }
 
+export const resetPassword = async (req: Request, res: Response) => {
+    try {
+        const {password, confirmPassword, token} = req.body;
+
+        if(password !== confirmPassword) {
+            return res.json({
+                success:false,
+                message:'Password not matching',
+            });
+        }
+
+        const userDetails = await User.findOne({token: token});
+
+        if(!userDetails) {
+            return res.json({
+                success:false,
+                message:'Token is invalid',
+            });
+        }
+        if( userDetails.resetPasswordExpires < Date.now()  ) {
+                return res.json({
+                    success:false,
+                    message:'Token is expired, please regenerate your token',
+                });
+        }
+        const hashedPassword = await bcrypt.hash(password, 14);
+
+        await User.findOneAndUpdate(
+            {token:token},
+            {password:hashedPassword},
+            {new:true},
+        );
+
+        return res.status(200).json({
+            success:true,
+            message:'Password reset successful',
+        });
+    }
+    catch(error) {
+        console.log(error);
+        return res.status(500).json({
+            success:false,
+            message:'Something went wrong while sending reset pwd mail'
+        })
+    }
+}
