@@ -75,3 +75,25 @@ export const createCourse = async (req: Request, res: Response) => {
         }
     }
 };
+
+export const showAllCourses = async (req: Request, res: Response) => {
+    try {
+            const allCourses = await Course.find({});
+
+            return res.status(200).json({
+                success:true,
+                message:'Data for all courses fetched successfully',
+                data:allCourses,
+            })
+
+    }
+    catch(error) {
+        if(error instanceof Error){
+            return res.status(500).json({
+                success:false,
+                message:'Cannot Fetch course data',
+                error:error.message,
+            })
+        }
+    }
+}
