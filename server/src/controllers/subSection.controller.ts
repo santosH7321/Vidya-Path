@@ -120,3 +120,40 @@ export const updateSubSection = async ( req: CustomRequest, res: Response ) => {
     });
   }
 };
+
+export const deleteSubSection = async ( req: Request, res: Response ) => {
+  try {
+    const { sectionId, subSectionId } = req.body;
+
+    if (!sectionId || !subSectionId) {
+      return res.status(400).json({
+        success: false,
+        message: "Section ID and SubSection ID are required",
+      });
+    }
+
+    await Section.findByIdAndUpdate(
+      sectionId,
+      {
+        $pull: {
+          subSection: subSectionId,
+        },
+      },
+      { new: true }
+    );
+
+    await SubSection.findByIdAndDelete(subSectionId);
+
+    return res.status(200).json({
+      success: true,
+      message: "SubSection deleted successfully",
+    });
+  } 
+  catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: error instanceof Error ? error.message : "Unknown Error",
+    });
+  }
+};
