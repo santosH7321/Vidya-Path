@@ -69,3 +69,54 @@ export const createSubSection = async ( req: CustomRequest, res: Response ) => {
     }
 };
 
+export const updateSubSection = async ( req: CustomRequest, res: Response ) => {
+  try {
+    const { subSectionId, title, description, timeDuration } = req.body;
+
+    if (!subSectionId) {
+      return res.status(400).json({
+        success: false,
+        message: "SubSection ID is required",
+      });
+    }
+
+    const subSection = await SubSection.findById(subSectionId);
+
+    if (!subSection) {
+      return res.status(404).json({
+        success: false,
+        message: "SubSection not found",
+      });
+    }
+
+    if (title) subSection.title = title;
+    if (description) subSection.description = description;
+    if (timeDuration) subSection.timeDuration = timeDuration;
+
+    const video = req.files?.videoFile;
+
+    if (video && !Array.isArray(video)) {
+      const uploadDetails = await uploadImageToCloudinary(
+        video,
+        process.env.FOLDER_NAME!
+      );
+
+      subSection.videoUrl = uploadDetails.secure_url;
+    }
+
+    await subSection.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "SubSection updated successfully",
+      data: subSection,
+    });
+  } 
+  catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: error instanceof Error ? error.message : "Unknown Error",
+    });
+  }
+};
