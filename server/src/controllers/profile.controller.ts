@@ -61,3 +61,52 @@ export const updateProfile = async ( req: AuthRequest, res: Response ) => {
     });
   }
 };
+
+export const deleteAccount = async (req: Request, res: Response) => {
+    try{
+        const id = req.user.id;
+
+        const userDetails = await User.findById(id);
+        if(!userDetails) {
+            return res.status(404).json({
+                success:false,
+                message:'User not found',
+            });
+        } 
+        await Profile.findByIdAndDelete({_id:userDetails.additionalDetails});
+
+        await User.findByIdAndDelete({_id:id});
+
+        return res.status(200).json({
+            success:true,
+            message:'User Deleted Successfully',
+        })
+    }
+    catch(error) {
+        return res.status(500).json({
+            success:false,
+            message:'User cannot be deleted successfully',
+            error: error instanceof Error ? error.message : "Unknown Error"
+        });
+    }
+};
+
+export const getAllUserDetails = async (req: Request, res: Response) => {
+    try {
+        const id = req.user.id;
+
+        const userDetails = await User.findById(id).populate("additionalDetails").exec();
+
+        return res.status(200).json({
+            success:true,
+            message:'User Data Fetched Successfully',
+        });
+       
+    }
+    catch(error) {
+        return res.status(500).json({
+            success:false,
+            message: error instanceof Error ? error.message : "Unknown Error",
+        });
+    }
+}
