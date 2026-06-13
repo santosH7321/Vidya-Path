@@ -5,6 +5,14 @@ import otpGenerator from "otp-generator";
 import bcrypt from "bcrypt";
 import Profile from "../models/profile.model";
 import jwt from "jsonwebtoken";
+import mailSender from "../utils/mailSender";
+import { passwordUpdated } from "../mail/templates/passwordUpdate";
+
+interface AuthRequest extends Request {
+	user: {
+		id: string;
+	};
+}
 
 export const sendOTP = async (req: Request, res: Response) =>  {
     try {
@@ -138,7 +146,7 @@ export const signUp = async (req: Request, res: Response) => {
             accountType,
             additionalDetails: profileDetails._id,
             image: `https://api.dicebear.com/5.x/initials/svg?seed=${firstName} ${lastName}`,
-        });
+        } as any);
 
         return res.status(201).json({
             success: true,
@@ -219,4 +227,106 @@ export const login = async (req: Request, res: Response) => {
             message:'Login Failure, please try again',
         });
     }
+};
+
+export const changePassword = async ( req: AuthRequest, res: Response ): Promise<Response> => {
+	try {
+		const userDetails = await User.findById(req.user.id);
+
+		if (!userDetails) {
+			return res.status(400).json({
+				success: false,
+				message: "Invalid request",
+			});
+		}
+
+		const { oldPassword, newPassword, confirmNewPassword } = req.body;
+
+		if (!userDetails.password) {
+			return res.status(400).json({
+				success: false,
+				message: "Password not found",
+			});
+		}
+
+		const isPasswordMatch = await bcrypt.compare(
+			oldPassword,
+			userDetails.password
+		);
+
+		if (!isPasswordMatch) {
+			return res.status(401).json({
+				success: false,
+				message: "The password is incorrect",
+			});
+		}
+
+		if (newPassword !== confirmNewPassword) {
+			return res.status(400).json({
+				success: false,
+				message: "The password and confirm password do not match",
+			});
+		}
+
+		const encryptedPassword = await bcrypt.hash(newPassword, 10);
+
+		const updatedUserDetails = await User.findByIdAndUpdate(
+			req.user.id,
+			{ password: encryptedPassword },
+			{ new: true }
+		);
+
+		if (!updatedUserDetails) {
+			return res.status(400).json({
+				success: false,
+				message: "Bad request",
+			});
+		}
+
+            try {
+            const emailResponse = await mailSender(
+                updatedUserDetails.email,
+                "Password Updated Successfully",
+                passwordUpdated(
+                    updatedUserDetails.email,
+                    `Password updated successfully for ${updatedUserDetails.firstName} ${updatedUserDetails.lastName}`
+                )
+            );
+
+            if (typeof emailResponse === "string") {
+                console.log("Email sent successfully:", emailResponse);
+            } else if (emailResponse && "response" in emailResponse) {
+                console.log("Email sent successfully:", emailResponse.response);
+            } else {
+                console.log("Email sent successfully:", emailResponse);
+            }
+        } catch (error) {
+            console.error("Error occurred while sending email:", error);
+
+            return res.status(500).json({
+                success: false,
+                message: "Error occurred while sending email",
+                error:
+                    error instanceof Error
+                        ? error.message
+                        : "Unknown error",
+            });
+        }
+
+		return res.status(200).json({
+			success: true,
+			message: "Password updated successfully",
+		});
+	} catch (error) {
+		console.error("Error occurred while updating password:", error);
+
+		return res.status(500).json({
+			success: false,
+			message: "Error occurred while updating password",
+			error:
+				error instanceof Error
+					? error.message
+					: "Unknown error",
+		});
+	}
 };
