@@ -44,7 +44,7 @@ export const createCourse = async (req: Request, res: Response) => {
             instructor: instructorDetails._id,
             whatYouWillLearn: whatYoutWillLearn,
             price,
-            tag: tagDetails._id,
+            tag: [tagDetails._id.toString()],
             thumbnail: thumbnailImage.secure_url,
         })
 
