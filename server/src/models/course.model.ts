@@ -34,14 +34,26 @@ const courseSchema = new Schema({
         type: String,
     },
     tag: {
-        type: Schema.Types.ObjectId,
-        ref:"Tag",
+        type: [String],
+		required: true,
     },
+    category: {
+		type: Schema.Types.ObjectId,
+		required: true,
+		ref: "Category",
+	},
     studentsEnrolled: [{
         type: Schema.Types.ObjectId,
         required:true,
         ref:"User",
-    }]
+    }],
+    instructions: {
+		type: [String],
+	},
+	status: {
+		type: String,
+		enum: ["Draft", "Published"],
+	},
 });
 
 const Course = model("Course", courseSchema);
