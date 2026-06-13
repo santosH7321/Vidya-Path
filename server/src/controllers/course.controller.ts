@@ -44,8 +44,8 @@ export const createCourse = async (req: Request, res: Response) => {
             instructor: instructorDetails._id,
             whatYouWillLearn: whatYoutWillLearn,
             price,
-            tag:tagDetails._id,
-            thumbnail:thumbnailImage.secure_url,
+            tag: tagDetails._id,
+            thumbnail: thumbnailImage.secure_url,
         })
 
         await User.findByIdAndUpdate(
@@ -76,24 +76,79 @@ export const createCourse = async (req: Request, res: Response) => {
     }
 };
 
-export const showAllCourses = async (req: Request, res: Response) => {
-    try {
-            const allCourses = await Course.find({});
+export const getAllCourses = async (req: Request, res: Response) => {
+	try {
+		const allCourses = await Course.find(
+			{},
+			{
+				courseName: true,
+				price: true,
+				thumbnail: true,
+				instructor: true,
+				ratingAndReviews: true,
+				studentsEnroled: true,
+			}
+		)
+			.populate("instructor")
+			.exec();
+		return res.status(200).json({
+			success: true,
+			data: allCourses,
+		});
+	} catch (error) {
+		console.log(error);
+		return res.status(404).json({
+			success: false,
+			message: `Can't Fetch Course Data`,
+			error: error instanceof Error ? error.message: "Error getAllCourse controller",
+		});
+	}
+};
 
-            return res.status(200).json({
-                success:true,
-                message:'Data for all courses fetched successfully',
-                data:allCourses,
-            })
+export const getCourseDetails = async (req: Request, res: Response) => {
+    try {
+            const {courseId} = req.body;
+
+            const courseDetails = await Course.find(
+                                        {_id:courseId})
+                                        .populate(
+                                            {
+                                                path:"instructor",
+                                                populate:{
+                                                    path:"additionalDetails",
+                                                },
+                                            }
+                                        )
+                                        .populate("category")
+                                        .populate("ratingAndreviews")
+                                        .populate({
+                                            path:"courseContent",
+                                            populate:{
+                                                path:"subSection",
+                                            },
+                                        })
+                                        .exec();
+
+
+                if(!courseDetails) {
+                    return res.status(400).json({
+                        success:false,
+                        message:`Could not find the course with ${courseId}`,
+                    });
+                }
+
+                return res.status(200).json({
+                    success:true,
+                    message:"Course Details fetched successfully",
+                    data:courseDetails,
+                })
 
     }
     catch(error) {
-        if(error instanceof Error){
-            return res.status(500).json({
-                success:false,
-                message:'Cannot Fetch course data',
-                error:error.message,
-            })
-        }
+        console.log(error);
+        return res.status(500).json({
+            success:false,
+            message:error instanceof Error ? error.message: "Error in getCourseDetails controller",
+        });
     }
 }
