@@ -1,16 +1,16 @@
 import { Request, Response } from "express";
 import Course from "../models/course.model";
-import Tag from "../models/tags.model";
+import Category from "../models/category.model";
 import User from "../models/user.model";
 import { uploadImageToCloudinary } from "../utils/imageUploader";
 import { UploadedFile } from "express-fileupload";
 
 export const createCourse = async (req: Request, res: Response) => {
     try {
-        const {courseName, courseDescription, whatYoutWillLearn, price, tag} = req.body;
+        const {courseName, courseDescription, whatYoutWillLearn, price, category} = req.body;
         const thumbnail = req.files?.thumbnailImage as UploadedFile;
 
-        if(!courseName || !courseDescription || !whatYoutWillLearn || !price || !tag || !thumbnail) {
+        if(!courseName || !courseDescription || !whatYoutWillLearn || !price || !category || !thumbnail) {
             return res.status(400).json({
                 success:false,
                 message:'All fields are required',
@@ -28,11 +28,11 @@ export const createCourse = async (req: Request, res: Response) => {
             });
         }
 
-        const tagDetails = await Tag.findById(tag);
-        if(!tagDetails) {
+        const categoryDetails = await Category.findById(category);
+        if(!categoryDetails) {
             return res.status(404).json({
                 success:false,
-                message:'Tag Details not found',
+                message:'Category Details not found',
             });
         }
 
@@ -44,7 +44,7 @@ export const createCourse = async (req: Request, res: Response) => {
             instructor: instructorDetails._id,
             whatYouWillLearn: whatYoutWillLearn,
             price,
-            tag: [tagDetails._id.toString()],
+            category: categoryDetails._id,
             thumbnail: thumbnailImage.secure_url,
         })
 
