@@ -156,3 +156,29 @@ export const updateDisplayPicture = async (req: AuthRequest & { files?: any }, r
       })
     }
 };
+
+export const getEnrolledCourses = async (req: Request, res: Response) => {
+    try {
+      const userId = req.user.id
+      const userDetails = await User.findOne({
+        _id: userId,
+      })
+        .populate("courses")
+        .exec()
+      if (!userDetails) {
+        return res.status(400).json({
+          success: false,
+          message: `Could not find user with id: ${userDetails}`,
+        })
+      }
+      return res.status(200).json({
+        success: true,
+        data: userDetails.courses,
+      })
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : "Unknown Error",
+      })
+    }
+};

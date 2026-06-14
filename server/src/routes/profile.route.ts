@@ -1,5 +1,5 @@
 import { Router } from "express"
-import { deleteAccount, getAllUserDetails, updateDisplayPicture, updateProfile } from "../controllers/profile.controller";
+import { deleteAccount, getAllUserDetails, getEnrolledCourses, updateDisplayPicture, updateProfile } from "../controllers/profile.controller";
 import { auth } from "../middlewares/auth.middleware";
 export const ProfileRoute = Router();
 
