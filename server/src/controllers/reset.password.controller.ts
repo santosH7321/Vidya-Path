@@ -1,4 +1,3 @@
-
 import { Request, Response } from "express";
 import User from "../models/user.model";
 import mailSender from "../utils/mailSender";
@@ -39,11 +38,7 @@ export const resetPasswordToken = async (req: Request, res: Response) => {
             success:false,
             message:'Something went wrong while sending reset pwd mail'
         })
-    }
-
-
-
-   
+    }   
 }
 
 export const resetPassword = async (req: Request, res: Response) => {
@@ -65,7 +60,7 @@ export const resetPassword = async (req: Request, res: Response) => {
                 message:'Token is invalid',
             });
         }
-        if( userDetails.resetPasswordExpires < Date.now()  ) {
+        if ((userDetails as any).resetPasswordExpires < Date.now()) {
                 return res.json({
                     success:false,
                     message:'Token is expired, please regenerate your token',
