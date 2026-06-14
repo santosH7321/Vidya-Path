@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import User from "../models/user.model";
 import Profile from "../models/profile.model";
+import { uploadImageToCloudinary } from "../utils/imageUploader";
 
 interface AuthRequest extends Request {
   user?: {
@@ -110,3 +111,48 @@ export const getAllUserDetails = async (req: Request, res: Response) => {
         });
     }
 }
+
+export const updateDisplayPicture = async (req: AuthRequest & { files?: any }, res: Response) => {
+    try {
+      const displayPicture = req.files?.displayPicture
+      if(!displayPicture){
+        return res.status(400).json({
+          success: false,
+          message: "Invalid request"
+        })
+      }
+
+      const userId = req.user?.id
+      if(!userId) {
+        return res.status(401).json({
+          success: false,
+          message: "Unauthorized"
+        })
+      }
+
+      const file = Array.isArray(displayPicture) ? displayPicture[0] : displayPicture;
+
+      const image = await uploadImageToCloudinary(
+        file,
+        process.env.FOLDER_NAME!,
+        1000,
+        1000
+      )
+      console.log(image)
+      const updatedProfile = await User.findByIdAndUpdate(
+        { _id: userId },
+        { image: image.secure_url },
+        { new: true }
+      )
+      res.status(200).json({
+        success: true,
+        message: `Image Updated successfully`,
+        data: updatedProfile,
+      })
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : "Unknown Error",
+      })
+    }
+};
